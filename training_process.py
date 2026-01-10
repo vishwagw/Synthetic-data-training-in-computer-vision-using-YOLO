@@ -1,4 +1,4 @@
-# 
+# Run Training
 
 from apple_detector import AppleDetector
 
