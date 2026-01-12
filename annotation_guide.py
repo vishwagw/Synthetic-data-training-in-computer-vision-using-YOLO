@@ -303,3 +303,142 @@ class YOLOAnnotator:
 
 # Example usage and documentation
 if __name__ == "__main__":
+    print("""
+================================================================================
+YOLO Annotation Format Guide
+================================================================================
+
+YOLO Format Structure:
+---------------------
+Each image has a corresponding .txt file with the same name.
+Each line in the file represents one object:
+
+    class x_center y_center width height
+
+Where:
+  - class: Object class ID (0 for apple in our case)
+  - x_center: Center X coordinate (normalized 0-1)
+  - y_center: Center Y coordinate (normalized 0-1)
+  - width: Box width (normalized 0-1)
+  - height: Box height (normalized 0-1)
+
+Example:
+--------
+For an image "apple001.jpg" (640x480 pixels) with an apple at:
+  - Top-left corner: (100, 50)
+  - Bottom-right corner: (300, 250)
+
+Calculations:
+  x_center = ((100 + 300) / 2) / 640 = 0.3125
+  y_center = ((50 + 250) / 2) / 480 = 0.3125
+  width = (300 - 100) / 640 = 0.3125
+  height = (250 - 50) / 480 = 0.4167
+
+The annotation file "apple001.txt" would contain:
+  0 0.3125 0.3125 0.3125 0.4167
+
+================================================================================
+
+METHOD 1: Interactive Annotation Tool (Recommended)
+================================================================================
+
+from yolo_annotator import YOLOAnnotator
+
+# Create annotator
+annotator = YOLOAnnotator(
+    image_dir='path/to/images',
+    output_dir='annotations'
+)
+
+# Start interactive annotation
+annotator.annotate_interactive()
+
+# The tool will:
+# 1. Display each image
+# 2. Let you draw boxes with mouse
+# 3. Save annotations in YOLO format
+# 4. Move to next image automatically
+
+================================================================================
+
+METHOD 2: Use Professional Tools
+================================================================================
+
+1. LabelImg (Free, Easy to Use)
+   - Download: https://github.com/HumanSignal/labelImg
+   - Install: pip install labelImg
+   - Run: labelImg
+   - Set format to YOLO in the sidebar
+   - Draw boxes and save
+
+2. Roboflow (Web-based, Free Tier)
+   - Go to: https://roboflow.com
+   - Upload images
+   - Annotate online
+   - Export in YOLO format
+
+3. CVAT (Professional, Free & Open Source)
+   - Website: https://www.cvat.ai
+   - Supports team collaboration
+   - Export in YOLO format
+
+================================================================================
+
+METHOD 3: Convert from Other Formats
+================================================================================
+
+If you have annotations in other formats (like JSON, XML), you can convert them:
+
+from yolo_annotator import YOLOAnnotationConverter
+
+# Example: Visualize existing annotations
+img = YOLOAnnotationConverter.visualize_yolo_annotations(
+    'path/to/image.jpg',
+    'path/to/label.txt'
+)
+cv2.imshow('Annotated', img)
+cv2.waitKey(0)
+
+# Validate all annotations
+YOLOAnnotationConverter.validate_annotations(
+    label_dir='annotations',
+    image_dir='images'
+)
+
+================================================================================
+
+Quick Start Example:
+================================================================================
+
+# 1. Install requirements
+# pip install opencv-python numpy
+
+# 2. Annotate your synthetic images
+annotator = YOLOAnnotator('synthetic_apples', 'annotations')
+annotator.annotate_interactive()
+
+# 3. Validate annotations
+from yolo_annotator import YOLOAnnotationConverter
+YOLOAnnotationConverter.validate_annotations('annotations', 'synthetic_apples')
+
+# 4. Use with your detector
+from apple_detector import AppleDetector
+detector = AppleDetector()
+detector.prepare_synthetic_data('synthetic_apples', 'annotations')
+
+================================================================================
+
+Tips for Good Annotations:
+================================================================================
+
+✓ Draw tight boxes around apples (no extra space)
+✓ Include partially visible apples
+✓ Label all apples in the image
+✓ Be consistent with box boundaries
+✓ Include variety (different angles, sizes, lighting)
+✗ Don't make boxes too large
+✗ Don't skip small or partially hidden apples
+✗ Don't annotate reflections or drawings of apples
+
+================================================================================
+    """)
