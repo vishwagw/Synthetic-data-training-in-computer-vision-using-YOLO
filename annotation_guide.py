@@ -202,4 +202,104 @@ class YOLOAnnotator:
         
         cv2.destroyAllWindows()
 
-  
+  class YOLOAnnotationConverter:
+    """
+    Utilities for converting between annotation formats
+    """
+    
+    @staticmethod
+    def yolo_to_corners(yolo_box, img_width, img_height):
+        """
+        Convert YOLO format to corner coordinates
+        
+        Args:
+            yolo_box: [class, x_center, y_center, width, height] (normalized)
+            img_width, img_height: Image dimensions
+        
+        Returns:
+            [x1, y1, x2, y2] in pixels
+        """
+        cls, x_center, y_center, width, height = yolo_box
+        
+        # Denormalize
+        x_center *= img_width
+        y_center *= img_height
+        width *= img_width
+        height *= img_height
+        
+        # Calculate corners
+        x1 = int(x_center - width / 2)
+        y1 = int(y_center - height / 2)
+        x2 = int(x_center + width / 2)
+        y2 = int(y_center + height / 2)
+        
+        return [x1, y1, x2, y2]
+    
+    @staticmethod
+    def visualize_yolo_annotations(image_path, label_path):
+        """Visualize YOLO annotations on an image"""
+        img = cv2.imread(str(image_path))
+        h, w = img.shape[:2]
+        
+        with open(label_path, 'r') as f:
+            for line in f:
+                parts = line.strip().split()
+                if len(parts) == 5:
+                    yolo_box = [int(parts[0])] + [float(x) for x in parts[1:]]
+                    x1, y1, x2, y2 = YOLOAnnotationConverter.yolo_to_corners(yolo_box, w, h)
+                    
+                    cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    cv2.putText(img, 'apple', (x1, y1-5), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        
+        return img
+    
+    @staticmethod
+    def validate_annotations(label_dir, image_dir):
+        """Validate YOLO annotations"""
+        label_dir = Path(label_dir)
+        image_dir = Path(image_dir)
+        
+        labels = list(label_dir.glob("*.txt"))
+        issues = []
+        
+        print(f"\nValidating {len(labels)} annotation files...")
+        
+        for label_path in labels:
+            with open(label_path, 'r') as f:
+                for line_num, line in enumerate(f, 1):
+                    parts = line.strip().split()
+                    
+                    if len(parts) != 5:
+                        issues.append(f"{label_path.name}:{line_num} - Wrong number of values (expected 5, got {len(parts)})")
+                        continue
+                    
+                    try:
+                        cls = int(parts[0])
+                        x, y, w, h = [float(v) for v in parts[1:]]
+                        
+                        # Check if values are normalized (0-1)
+                        if not (0 <= x <= 1 and 0 <= y <= 1 and 0 <= w <= 1 and 0 <= h <= 1):
+                            issues.append(f"{label_path.name}:{line_num} - Values not normalized (must be 0-1)")
+                        
+                        # Check if box is valid
+                        if w <= 0 or h <= 0:
+                            issues.append(f"{label_path.name}:{line_num} - Invalid box size (width/height must be > 0)")
+                    
+                    except ValueError as e:
+                        issues.append(f"{label_path.name}:{line_num} - Invalid format: {e}")
+        
+        if issues:
+            print(f"\n⚠ Found {len(issues)} issues:")
+            for issue in issues[:10]:  # Show first 10
+                print(f"  {issue}")
+            if len(issues) > 10:
+                print(f"  ... and {len(issues) - 10} more")
+        else:
+            print("✓ All annotations valid!")
+        
+        return issues
+
+
+# Example usage and documentation
+if __name__ == "__main__":
